@@ -1,9 +1,13 @@
+'''
+Reflection: 执行 -> 反思 -> 优化
+'''
+
 from typing import List, Dict, Any
 # 假设 llm_client.py 文件已存在，并从中导入 HelloAgentsLLM 类
 from llm_client import HelloAgentsLLM
 
-# --- 模块 1: 记忆模块 ---
 
+# --- 模块 1: 记忆模块 ---
 class Memory:
     """
     一个简单的短期记忆模块，用于存储智能体的行动与反思轨迹。
@@ -94,50 +98,52 @@ REFINE_PROMPT_TEMPLATE = """
 请直接输出优化后的代码，不要包含任何额外的解释。
 """
 
+
 class ReflectionAgent:
-    def __init__(self, llm_client, max_iterations=3):
+    def __init__(self, llm_client, max_iterations = 3):
         self.llm_client = llm_client
-        self.memory = Memory()
         self.max_iterations = max_iterations
-
+        self.memory = Memory()  # initialization
+    
     def run(self, task: str):
-        print(f"\n--- 开始处理任务 ---\n任务: {task}")
+        print('\n --- 开始处理任务 --- \n 任务: {task}')
 
-        # --- 1. 初始执行 ---
-        print("\n--- 正在进行初始尝试 ---")
-        initial_prompt = INITIAL_PROMPT_TEMPLATE.format(task=task)
+        # step1: 初始执行
+        print('\n --- 正在初始执行 ---')
+        initial_prompt = INITIAL_PROMPT_TEMPLATE.format(task = task)
         initial_code = self._get_llm_response(initial_prompt)
         self.memory.add_record("execution", initial_code)
 
-        # --- 2. 迭代循环：反思与优化 ---
+
+        # step2: 反思与优化 迭代循环
         for i in range(self.max_iterations):
-            print(f"\n--- 第 {i+1}/{self.max_iterations} 轮迭代 ---")
-
-            # a. 反思
-            print("\n-> 正在进行反思...")
-            last_code = self.memory.get_last_execution()
-            reflect_prompt = REFLECT_PROMPT_TEMPLATE.format(task=task, code=last_code)
+            print('\n --- 第{i+1}次迭代优化 ---')
+            print('\n --- 开始反思 ---')
+            last_code = self.memory.get_last_execution()    # 获取上一次的答案
+            reflect_prompt = REFLECT_PROMPT_TEMPLATE.format(task = task, code = last_code)
             feedback = self._get_llm_response(reflect_prompt)
-            self.memory.add_record("reflection", feedback)
+            self.memory.add_record('reflection', feedback)
 
-            # b. 检查是否需要停止
-            if "无需改进" in feedback or "no need for improvement" in feedback.lower():
-                print("\n✅ 反思认为代码已无需改进，任务完成。")
+            # 检查是否要停止优化
+            if '无需改进' in feedback or 'no need for improvement' in feedback.lower():
+                print('\n 代码已无需改进，任务完成')
                 break
-
-            # c. 优化
-            print("\n-> 正在进行优化...")
+            
+            # 若未停止 则继续优化
+            print('\n --- 正在进行优化 ---')
             refine_prompt = REFINE_PROMPT_TEMPLATE.format(
-                task=task,
-                last_code_attempt=last_code,
-                feedback=feedback
+                task = task,
+                last_code_attempt = last_code,
+                feedback = feedback
             )
-            refined_code = self._get_llm_response(refine_prompt)
-            self.memory.add_record("execution", refined_code)
-        
+            refine_code = self._get_llm_response(refine_prompt)
+            self.memory.add_record('execution', refine_code)
+
+        # 跳出循环后 获取最终的结果（最后一条）
         final_code = self.memory.get_last_execution()
-        print(f"\n--- 任务完成 ---\n最终生成的代码:\n{final_code}")
+        print('\n --- 任务完成 --- \n 最终生成的代码: \n {final_code}')
         return final_code
+
 
     def _get_llm_response(self, prompt: str) -> str:
         """一个辅助方法，用于调用LLM并获取完整的流式响应。"""
