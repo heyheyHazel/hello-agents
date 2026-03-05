@@ -19,16 +19,20 @@ from tavily import TavilyClient
 # 加载环境变量
 load_dotenv()
 
-# 定义状态结构
-class SearchState(TypedDict):
-    messages: Annotated[list, add_messages]
+
+# 定义全局状态的数据结构 所有节点都能读取和更新这个状态
+# 创建了 SearchState 这个 TypedDict，为状态对象定义了一个清晰的数据模式（Schema）
+class SearchState(TypedDict):   # TypedDict定义一个规范
+    messages: Annotated[list, add_messages] # 存新增的对话记录
     user_query: str        # 用户查询
     search_query: str      # 优化后的搜索查询
     search_results: str    # Tavily搜索结果
     final_answer: str      # 最终答案
     step: str             # 当前步骤
 
-# 初始化模型和Tavily客户端
+
+
+# 初始化模型客户端
 llm = ChatOpenAI(
     model=os.getenv("LLM_MODEL_ID", "gpt-4o-mini"),
     api_key=os.getenv("LLM_API_KEY"),
@@ -39,26 +43,31 @@ llm = ChatOpenAI(
 # 初始化Tavily客户端
 tavily_client = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
 
+
+
+
 def understand_query_node(state: SearchState) -> SearchState:
     """步骤1：理解用户查询并生成搜索关键词"""
     
     # 获取最新的用户消息
     user_message = ""
-    for msg in reversed(state["messages"]):
-        if isinstance(msg, HumanMessage):
+    for msg in reversed(state["messages"]): # 倒序查找最新一条
+        if isinstance(msg, HumanMessage):   # 只保留human的话
             user_message = msg.content
             break
     
-    understand_prompt = f"""分析用户的查询："{user_message}"
+    understand_prompt = f"""
+        分析用户的查询："{user_message}"
 
-请完成两个任务：
-1. 简洁总结用户想要了解什么
-2. 生成最适合搜索的关键词（中英文均可，要精准）
+        请完成两个任务：
+        1. 简洁总结用户想要了解什么
+        2. 生成最适合搜索的关键词（中英文均可，要精准）
 
-格式：
-理解：[用户需求总结]
-搜索词：[最佳搜索关键词]"""
+        格式：
+        理解：[用户需求总结]
+        搜索词：[最佳搜索关键词]"""
 
+    # invoke: langchain/langgraph自带的方法 获取大模型的回答
     response = llm.invoke([SystemMessage(content=understand_prompt)])
     
     # 提取搜索关键词
@@ -70,6 +79,7 @@ def understand_query_node(state: SearchState) -> SearchState:
     elif "搜索关键词：" in response_text:
         search_query = response_text.split("搜索关键词：")[1].strip()
     
+    # 返回结果
     return {
         "user_query": response.content,
         "search_query": search_query,
@@ -135,11 +145,10 @@ def generate_answer_node(state: SearchState) -> SearchState:
     # 检查是否有搜索结果
     if state["step"] == "search_failed":
         # 如果搜索失败，基于LLM知识回答
-        fallback_prompt = f"""搜索API暂时不可用，请基于您的知识回答用户的问题：
-
-用户问题：{state['user_query']}
-
-请提供一个有用的回答，并说明这是基于已有知识的回答。"""
+        fallback_prompt = f"""
+            搜索API暂时不可用，请基于您的知识回答用户的问题：
+            用户问题：{state['user_query']}
+            请提供一个有用的回答，并说明这是基于已有知识的回答。"""
         
         response = llm.invoke([SystemMessage(content=fallback_prompt)])
         
@@ -150,19 +159,19 @@ def generate_answer_node(state: SearchState) -> SearchState:
         }
     
     # 基于搜索结果生成答案
-    answer_prompt = f"""基于以下搜索结果为用户提供完整、准确的答案：
+    answer_prompt = f"""
+        基于以下搜索结果为用户提供完整、准确的答案：
+        用户问题：{state['user_query']}
 
-用户问题：{state['user_query']}
+        搜索结果：
+        {state['search_results']}
 
-搜索结果：
-{state['search_results']}
-
-请要求：
-1. 综合搜索结果，提供准确、有用的回答
-2. 如果是技术问题，提供具体的解决方案或代码
-3. 引用重要信息的来源
-4. 回答要结构清晰、易于理解
-5. 如果搜索结果不够完整，请说明并提供补充建议"""
+        请要求：
+        1. 综合搜索结果，提供准确、有用的回答
+        2. 如果是技术问题，提供具体的解决方案或代码
+        3. 引用重要信息的来源
+        4. 回答要结构清晰、易于理解
+        5. 如果搜索结果不够完整，请说明并提供补充建议"""
 
     response = llm.invoke([SystemMessage(content=answer_prompt)])
     
@@ -176,18 +185,18 @@ def generate_answer_node(state: SearchState) -> SearchState:
 def create_search_assistant():
     workflow = StateGraph(SearchState)
     
-    # 添加三个节点
+    # 添加三个节点（处理任务）
     workflow.add_node("understand", understand_query_node)
     workflow.add_node("search", tavily_search_node)
     workflow.add_node("answer", generate_answer_node)
     
-    # 设置线性流程
+    # 设置线性流程（添加边 传递）
     workflow.add_edge(START, "understand")
     workflow.add_edge("understand", "search")
     workflow.add_edge("search", "answer")
     workflow.add_edge("answer", END)
     
-    # 编译图
+    # 编译图（生成）
     memory = InMemorySaver()
     app = workflow.compile(checkpointer=memory)
     
