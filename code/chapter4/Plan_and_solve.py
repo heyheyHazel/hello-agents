@@ -15,7 +15,9 @@ except Exception as e:
 # --- 1. LLM客户端定义 ---
 # 假设你已经有llm_client.py文件，里面定义了HelloAgentsLLM类
 
+
 # --- 2. 规划器 (Planner) 定义 ---
+# plan and solve: 定义角色、任务、格式约束
 PLANNER_PROMPT_TEMPLATE = """
 你是一个顶级的AI规划专家。你的任务是将用户提出的复杂问题分解成一个由多个简单步骤组成的行动计划。
 请确保计划中的每个步骤都是一个独立的、可执行的子任务，并且严格按照逻辑顺序排列。
@@ -41,8 +43,11 @@ class Planner:
         response_text = self.llm_client.think(messages=messages) or ""
         print(f"✅ 计划已生成:\n{response_text}")
         
+        # 解析
         try:
+            # 提取```python ```中间的内容（计划）
             plan_str = response_text.split("```python")[1].split("```")[0].strip()
+            # 变成1. 2.列表形式
             plan = ast.literal_eval(plan_str)
             return plan if isinstance(plan, list) else []
         except (ValueError, SyntaxError, IndexError) as e:
@@ -53,7 +58,10 @@ class Planner:
             print(f"❌ 解析计划时发生未知错误: {e}")
             return []
 
+
 # --- 3. 执行器 (Executor) 定义 ---
+# 输入原始问题、完整计划、历史步骤和当前步骤，构造动态上下文
+# 相当于给模型提供一个草稿纸可以看前一步骤内容，不容易出错
 EXECUTOR_PROMPT_TEMPLATE = """
 你是一位顶级的AI执行专家。你的任务是严格按照给定的计划，一步步地解决问题。
 你将收到原始问题、完整的计划、以及到目前为止已经完成的步骤和结果。
@@ -98,6 +106,7 @@ class Executor:
             
         return final_answer
 
+
 # --- 4. 智能体 (Agent) 整合 ---
 class PlanAndSolveAgent:
     def __init__(self, llm_client: HelloAgentsLLM):
@@ -107,12 +116,15 @@ class PlanAndSolveAgent:
 
     def run(self, question: str):
         print(f"\n--- 开始处理问题 ---\n问题: {question}")
+        # 生成plan
         plan = self.planner.plan(question)
         if not plan:
             print("\n--- 任务终止 --- \n无法生成有效的行动计划。")
             return
+        # 根据plan和question写answer
         final_answer = self.executor.execute(question, plan)
         print(f"\n--- 任务完成 ---\n最终答案: {final_answer}")
+
 
 # --- 5. 主函数入口 ---
 if __name__ == '__main__':
