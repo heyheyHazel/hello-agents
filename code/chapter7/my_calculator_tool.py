@@ -4,8 +4,12 @@ import operator
 import math
 from hello_agents import ToolRegistry
 
+
+
 def my_calculate(expression: str) -> str:
-    """简单的数学计算函数"""
+    '''
+    定义一个简单的数学计算工具
+    '''
     if not expression.strip():
         return "计算表达式不能为空"
 

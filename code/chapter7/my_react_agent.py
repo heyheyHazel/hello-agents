@@ -53,7 +53,9 @@ class MyReActAgent(ReActAgent):
         print(f"✅ {name} 初始化完成，最大步数: {max_steps}")
 
     def run(self, input_text: str, **kwargs) -> str:
-        """运行ReAct Agent"""
+        '''
+        在这里定义ReAct的执行逻辑: 推理 -> 行动 -> 观察 流程
+        '''
         self.current_history = []
         current_step = 0
 
@@ -64,13 +66,13 @@ class MyReActAgent(ReActAgent):
             print(f"\n--- 第 {current_step} 步 ---")
 
             # 1. 构建提示词
-            tools_desc = self.tool_registry.get_tools_description()
-            history_str = "\n".join(self.current_history)
+            tools_desc = self.tool_registry.get_tools_description() # 工具描述
+            history_str = "\n".join(self.current_history)   # 历史记录
             prompt = self.prompt_template.format(
                 tools=tools_desc,
                 question=input_text,
                 history=history_str
-            )
+            )   # 构造最终的prompt
 
             # 2. 调用LLM
             messages = [{"role": "user", "content": prompt}]

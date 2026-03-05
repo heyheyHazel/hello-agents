@@ -4,6 +4,8 @@ from typing import Optional
 from openai import OpenAI
 from hello_agents import HelloAgentsLLM
 
+
+# 创建一个新类MyLLM, 继承HelloAgentsLLM父类
 class MyLLM(HelloAgentsLLM):
     def __init__(
         self,
@@ -14,6 +16,7 @@ class MyLLM(HelloAgentsLLM):
         **kwargs
     ):
         # 检查provider是否为我们想处理的'modelscope'
+        # 如果是modelscope, 就拦截下来特殊处理
         if provider == "modelscope":
             print("正在使用自定义的 ModelScope Provider")
             self.provider = "modelscope"
