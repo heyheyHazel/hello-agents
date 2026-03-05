@@ -1,3 +1,10 @@
+''' 
+为了让代码结构更清晰、更易于复用，
+来定义一个专属的LLM客户端类。
+这个类将封装所有与模型服务交互的细节，
+让我们的主逻辑可以更专注于智能体的构建。
+'''
+
 import os
 from openai import OpenAI
 from dotenv import load_dotenv

@@ -6,6 +6,8 @@ import os
 from serpapi import SerpApiClient
 from typing import Dict, Any
 
+
+# 定义search函数：设置参数、API -> 交给client搜索结果 -> 解析结果
 def search(query: str) -> str:
     """
     一个基于SerpApi的实战网页搜索引擎工具。
@@ -50,6 +52,8 @@ def search(query: str) -> str:
     
 from typing import Dict, Any
 
+
+# 集成管理各个工具 包括注册、查看等
 class ToolExecutor:
     """
     一个工具执行器，负责管理和执行工具。
@@ -60,27 +64,43 @@ class ToolExecutor:
     def registerTool(self, name: str, description: str, func: callable):
         """
         向工具箱中注册一个新工具。
+        param:
+            name: 工具名称（满足唯一性）
+            description: 工具描述，大模型根据工具描述决定是否要调用工具
+            func: 工具函数，如上面的search函数，定义这个工具所做的事情
         """
         if name in self.tools:
             print(f"警告：工具 '{name}' 已存在，将被覆盖。")
         
+        # 增加一个工具 tools是嵌套字典 name是key 后面的字典是value
         self.tools[name] = {"description": description, "func": func}
         print(f"工具 '{name}' 已注册。")
+
 
     def getTool(self, name: str) -> callable:
         """
         根据名称获取一个工具的执行函数。
+        param:
+            name: 工具名称
         """
+        # get(name, {}): 返回name, 如果没有就返回空{}
+        # .get("func"): 只返回name下的func值
         return self.tools.get(name, {}).get("func")
+
 
     def getAvailableTools(self) -> str:
         """
         获取所有可用工具的格式化描述字符串。
         """
+        # 返回格式是 name: description
         return "\n".join([
             f"- {name}: {info['description']}" 
             for name, info in self.tools.items()
         ])
+
+
+
+
 
 
 # --- 工具初始化与使用示例 ---
