@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
-"""三国狼人杀中文提示词"""
+"""
+三国狼人杀中文提示词
+让角色兼具游戏人格和文化人格
+"""
 
 class ChinesePrompts:
     """中文提示词管理类"""
@@ -9,15 +12,15 @@ class ChinesePrompts:
         """获取角色提示词"""
         base_prompt = f"""你是{character}，在这场三国狼人杀游戏中扮演{role}。
 
-请严格按照以下JSON格式回复，不要添加任何其他文字：
-{{
-    "reach_agreement": true/false,
-    "confidence_level": 1-10的数字,
-    "key_evidence": "你的证据或观点"
-}}
+        请严格按照以下JSON格式回复，不要添加任何其他文字：
+        {{
+            "reach_agreement": true/false,
+            "confidence_level": 1-10的数字,
+            "key_evidence": "你的证据或观点"
+        }}
 
-角色特点：
-"""
+        角色特点：
+        """
         
         if role == "狼人":
             return base_prompt + f"""

@@ -34,6 +34,7 @@ from utils_cn import (
 )
 
 
+
 class ThreeKingdomsWerewolfGame:
     """三国狼人杀游戏主类"""
     
@@ -51,7 +52,7 @@ class ThreeKingdomsWerewolfGame:
         # 女巫道具状态
         self.witch_has_antidote = True
         self.witch_has_poison = True
-        
+
     async def create_player(self, role: str, character: str) -> ReActAgent:
         """创建具有三国背景的玩家"""
         name = get_chinese_name(character)
@@ -122,6 +123,7 @@ class ThreeKingdomsWerewolfGame:
         await self.moderator.announce(f"🐺 狼人请睁眼，选择今晚要击杀的目标...")
         
         # 狼人讨论
+        # 通过消息中心建立狼人专属通信频道 MsgHub 命名为 werewolves_hub
         async with MsgHub(
             self.werewolves,
             enable_auto_broadcast=True,
@@ -273,6 +275,7 @@ class ThreeKingdomsWerewolfGame:
         await self.moderator.day_announcement(round_num)
         
         # 讨论阶段
+        # 通过MsgHub给存活的建立全局广播
         async with MsgHub(
             self.alive_players,
             enable_auto_broadcast=True,
@@ -285,6 +288,7 @@ class ThreeKingdomsWerewolfGame:
             
             # 投票阶段
             all_hub.set_auto_broadcast(False)
+            # fanout_pipeline并行收集所有玩家的投票
             vote_msgs = await fanout_pipeline(
                 self.alive_players,
                 await self.moderator.announce("请投票选择要淘汰的玩家"),
