@@ -166,3 +166,4 @@ AGENTS.md
 
 # 忽略 Agent 运行跟踪文件
 memory/traces/
+memory/sessions/
