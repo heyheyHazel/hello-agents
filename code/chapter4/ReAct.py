@@ -2,7 +2,8 @@ import re
 from llm_client import HelloAgentsLLM
 from tools import ToolExecutor, search
 
-# (此处省略 REACT_PROMPT_TEMPLATE 的定义)
+# 系统提示词设计，为大语言模型提供了行动的操作指令
+# 角色定义、工具清单、格式约定、动态上下文
 REACT_PROMPT_TEMPLATE = """
 请注意，你是一个有能力调用外部工具的智能助手。
 
@@ -23,13 +24,17 @@ Question: {question}
 History: {history}
 """
 
+
+# 搭建ReAct框架下的agent
+# 核心是一个循环，它不断地“格式化提示词 -> 调用LLM -> 执行动作 -> 整合结果”，直到任务完成或达到最大步数限制
 class ReActAgent:
     def __init__(self, llm_client: HelloAgentsLLM, tool_executor: ToolExecutor, max_steps: int = 5):
-        self.llm_client = llm_client
-        self.tool_executor = tool_executor
-        self.max_steps = max_steps
-        self.history = []
+        self.llm_client = llm_client    # llm客户端 思考的大脑
+        self.tool_executor = tool_executor  # 工具清单 智能体的手
+        self.max_steps = max_steps  # 最大步数限制
+        self.history = []   # 存储对话历史 动态上下文
 
+    # 运行循环
     def run(self, question: str):
         self.history = []
         current_step = 0
@@ -38,18 +43,25 @@ class ReActAgent:
             current_step += 1
             print(f"\n--- 第 {current_step} 步 ---")
 
-            tools_desc = self.tool_executor.getAvailableTools()
-            history_str = "\n".join(self.history)
+            tools_desc = self.tool_executor.getAvailableTools() # 获取所有工具的描述
+            history_str = "\n".join(self.history)   # 对话历史
+            # .format: 把具体变量往prompt template里面填
             prompt = REACT_PROMPT_TEMPLATE.format(tools=tools_desc, question=question, history=history_str)
 
+            # 用户对话内容
             messages = [{"role": "user", "content": prompt}]
+            # 大模型响应的答案
             response_text = self.llm_client.think(messages=messages)
             if not response_text:
-                print("错误：LLM未能返回有效响应。"); break
-
+                print("错误：LLM未能返回有效响应。")
+                break
+            # _parse_output: 根据标识符解析出thought和action两部分
             thought, action = self._parse_output(response_text)
-            if thought: print(f"🤔 思考: {thought}")
-            if not action: print("警告：未能解析出有效的Action，流程终止。"); break
+            if thought: 
+                print(f"🤔 思考: {thought}")
+            if not action: 
+                print("警告：未能解析出有效的Action，流程终止。")
+                break
             
             if action.startswith("Finish"):
                 # 如果是Finish指令，提取最终答案并结束
@@ -57,9 +69,12 @@ class ReActAgent:
                 print(f"🎉 最终答案: {final_answer}")
                 return final_answer
             
+            # 如果没有Finish 则继续调用工具
+            # 大模型思考得出工具名称和输入内容 解析变量
             tool_name, tool_input = self._parse_action(action)
             if not tool_name or not tool_input:
-                self.history.append("Observation: 无效的Action格式，请检查。"); continue
+                self.history.append("Observation: 无效的Action格式，请检查。")
+                continue
 
             print(f"🎬 行动: {tool_name}[{tool_input}]")
             tool_function = self.tool_executor.getTool(tool_name)
@@ -73,6 +88,9 @@ class ReActAgent:
         return None
 
     def _parse_output(self, text: str):
+        '''
+        从LLM的完整响应中分离出Thought和Action两个主要部分
+        '''
         # Thought: 匹配到 Action: 或文本末尾
         thought_match = re.search(r"Thought:\s*(.*?)(?=\nAction:|$)", text, re.DOTALL)
         # Action: 匹配到文本末尾
@@ -82,6 +100,9 @@ class ReActAgent:
         return thought, action
 
     def _parse_action(self, action_text: str):
+        '''
+        进一步解析Action字符串，例如从 Search[华为最新手机] 中提取出工具名 Search 和工具输入 华为最新手机。
+        '''
         match = re.match(r"(\w+)\[(.*)\]", action_text, re.DOTALL)
         return (match.group(1), match.group(2)) if match else (None, None)
 
