@@ -11,14 +11,16 @@ from ...models.schemas import (
 )
 from ...services.amap_service import get_amap_service
 
+# 创建路由器
 router = APIRouter(prefix="/map", tags=["地图服务"])
 
-
+# @router是函数装饰器，search_poi()是被装饰的函数
+# 把普通函数变成api接口，用户访问/poi路径时执行search_poi()函数
 @router.get(
-    "/poi",
-    response_model=POISearchResponse,
-    summary="搜索POI",
-    description="根据关键词搜索POI(兴趣点)"
+    "/poi", # 路径
+    response_model=POISearchResponse,   # 响应模型
+    summary="搜索POI",  # 摘要
+    description="根据关键词搜索POI(兴趣点)" # 描述
 )
 async def search_poi(
     keywords: str = Query(..., description="搜索关键词", example="故宫"),

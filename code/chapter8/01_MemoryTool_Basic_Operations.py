@@ -11,6 +11,8 @@ from datetime import datetime
 from typing import List
 from hello_agents.tools import MemoryTool
 
+
+
 def memory_tool_execute_demo():
     """MemoryTool execute方法演示"""
     print("🧠 MemoryTool基础操作演示")
@@ -26,6 +28,8 @@ def memory_tool_execute_demo():
     print(f"📋 支持的操作: add, search, summary, stats, update, remove, forget, consolidate, clear_all")
     
     return memory_tool
+
+
 
 def add_memory_demo(memory_tool):
     """添加记忆演示 - 模拟人类记忆编码过程"""
@@ -74,6 +78,8 @@ def add_memory_demo(memory_tool):
         "source":"technical_documentation"
     })
     print(f"感知记忆: {result}")
+
+
 
 def search_memory_demo(memory_tool):
     """搜索记忆演示 - 实现语义理解的检索"""

@@ -35,7 +35,7 @@ async def plan_trip(request: TripRequest):
         print(f"   天数: {request.travel_days}")
         print(f"{'='*60}\n")
 
-        # 获取Agent实例
+        # 获取Agent实例（全局实例）
         print("🔄 获取多智能体系统实例...")
         agent = get_trip_planner_agent()
 
