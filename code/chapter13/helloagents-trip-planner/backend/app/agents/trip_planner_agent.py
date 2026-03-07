@@ -512,8 +512,11 @@ class MultiAgentTripPlanner:
 
 
 # 全局实例化智能体
+# 私有变量 内部使用 不希望外部直接访问 要通过get_trip_planner_agent()获得
 _multi_agent_planner = None
 
+
+# 标注返回类型 明确返回的是 MultiAgentTripPlanner 类型的对象
 def get_trip_planner_agent() -> MultiAgentTripPlanner:
     '''单例模式，创建多智能体旅行规划系统的实例'''
 
