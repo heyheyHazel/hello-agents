@@ -4,15 +4,15 @@ from typing import List, Optional, Union
 from pydantic import BaseModel, Field, field_validator
 from datetime import date
 
-
+# 使用Pydantic自下而上定义数据模型
 # ============ 请求模型 ============
 
 class TripRequest(BaseModel):
-    """旅行规划请求"""
+    """旅行规划请求 规定了填写规则（必填选填、最大最小值等等）"""
     city: str = Field(..., description="目的地城市", example="北京")
     start_date: str = Field(..., description="开始日期 YYYY-MM-DD", example="2025-06-01")
     end_date: str = Field(..., description="结束日期 YYYY-MM-DD", example="2025-06-03")
-    travel_days: int = Field(..., description="旅行天数", ge=1, le=30, example=3)
+    travel_days: int = Field(..., description="旅行天数", ge=1, le=30, example=3)   # 最大30天 超过30天会报错
     transportation: str = Field(..., description="交通方式", example="公共交通")
     accommodation: str = Field(..., description="住宿偏好", example="经济型酒店")
     preferences: List[str] = Field(default=[], description="旅行偏好标签", example=["历史文化", "美食"])
